@@ -635,8 +635,10 @@ func (c *Controller) genNatGwDeployment(gw *kubeovnv1.VpcNatGateway, oldDeploy *
 	podAnnotations := map[string]string{
 		util.VpcNatGatewayAnnotation:     gw.Name,
 		util.AttachmentNetworkAnnotation: fmt.Sprintf("%s/%s", c.config.PodNamespace, util.VpcExternalNet),
-		util.LogicalSwitchAnnotation:     gw.Spec.Subnet,
-		util.IpAddressAnnotation:         gw.Spec.LanIp,
+
+		fmt.Sprintf(util.IpAddressAnnotationTemplate, "ovn.default.ovn"): gw.Spec.LanIp,
+		fmt.Sprintf(util.CidrAnnotationTemplate, "ovn.default.ovn"): gw.Spec.Subnet,
+		util.DefaultNetworkAnnotation: "default/ovn",
 	}
 	for key, value := range podAnnotations {
 		newPodAnnotations[key] = value
@@ -681,6 +683,9 @@ func (c *Controller) genNatGwDeployment(gw *kubeovnv1.VpcNatGateway, oldDeploy *
 						},
 					},
 					NodeSelector: selectors,
+					Tolerations: []corev1.Toleration{
+						{Operator: corev1.TolerationOpExists},
+					},
 				},
 			},
 			Strategy: v1.DeploymentStrategy{
